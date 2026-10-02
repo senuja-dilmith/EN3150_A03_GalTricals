@@ -28,11 +28,6 @@ This project focuses on the automated classification of agricultural rice grains
 ├── requirements.txt                           # Python dependencies required to run the code
 └── README.md                                  # Project documentation
 
-ඔයා අර කලින් මැසේජ් එකේ Code Box එකෙන් Copy කරගන්නකොට යටම තිබ්බ කෑල්ල (Team Details සහ Table එක තියෙන ටික) අතපසුවීමකින් Copy වෙලා නෑ වගේ! මම දුන්න එකේ ඒක යටම තිබ්බා.
-
-මම මෙතන ආයෙමත් මුල ඉඳන් අගටම සම්පූර්ණ එකම දෙන්නම්. මේ Box එකේ තියෙන ඔක්කොම ටික (යට තියෙන Team ගෲප් එකේ නම් ටිකත් එක්කම) Copy කරගන්න:
-
-```text
 # 🌾 Resource-Constrained CNN for Edge Image Classification
 
 ![TensorFlow](https://img.shields.io/badge/TensorFlow-2.x-orange.svg)
