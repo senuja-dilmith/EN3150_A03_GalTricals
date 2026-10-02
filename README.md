@@ -6,23 +6,24 @@
 ![License](https://img.shields.io/badge/License-MIT-green.svg)
 
 ## 📌 Project Overview
-This project focuses on the automated classification of agricultural rice grains (5 varieties) using Convolutional Neural Networks (CNNs) optimized for **extreme edge devices**. We built a custom **Depthwise-Separable CNN (Model B)** strictly constrained to under 100,000 parameters to simulate real-world microcontroller deployments (e.g., an automated agricultural sorting machine).
+This project focuses on the automated classification of agricultural rice grains (5 varieties: Arborio, Basmati, Ipsala, Jasmine, and Karacadag) using Convolutional Neural Networks (CNNs) optimized for **extreme edge devices**. We designed and evaluated a custom **Depthwise-Separable CNN (Model B)** strictly constrained to under 100,000 trainable parameters to simulate real-world low-resource microcontroller deployments (e.g., an automated agricultural sorting machine).
 
 ### 🚀 Key Achievements
-* **Model Size on Disk:** 0.99 MB (94% reduction compared to SOTA EfficientNet-B0)
-* **Trainable Parameters:** 79,168 (Satisfies the <100k constraint)
+* **Model Size on Disk:** 0.99 MB (A massive 94% reduction compared to SOTA EfficientNet-B0)
+* **Trainable Parameters:** 79,168 (Successfully satisfies the <100k constraint)
 * **Test Accuracy:** 96.73%
-* **Features:** Depthwise-Separable Convolutions, Global Average Pooling, Deterministic Random Seed Locking for 100% reproducibility.
+* **Architectural Features:** Depthwise-Separable Convolutions, Global Average Pooling, and Deterministic Random Seed Locking for 100% reproducibility.
 
 ## 📂 Repository Structure
 ```text
+├── models/                                    # Saved pre-trained models (.h5 / .keras)
 ├── notebook/
-│   └── EN3150_Assignment_03_GalTricals.ipynb  # Main Jupyter Notebook
+│   └── EN3150_Assignment_03_GalTricals.ipynb  # Main Jupyter Notebook containing the code
 ├── report/
-│   ├── EN3150_Assignment_03.pdf               # Final Project Report
+│   ├── EN3150_Assignment_03.pdf               # Final Compiled Project Report
 │   └── latex_source/                          # LaTeX source code and image assets
 ├── results/
-│   └── figures/                               # Training curves and confusion matrices
+│   └── figures/                               # Exported training curves and confusion matrices
 ├── EN3150_Assignment_03_In23.pdf              # Original Assignment Guidelines
-├── requirements.txt                           # Python dependencies
+├── requirements.txt                           # Python dependencies required to run the code
 └── README.md                                  # Project documentation
