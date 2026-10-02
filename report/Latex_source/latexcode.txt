@@ -1,0 +1,482 @@
+\documentclass[12pt, a4paper]{article}
+\usepackage{graphicx}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{float}
+\usepackage{amsmath}
+\usepackage{titlesec}
+\usepackage{enumitem}
+
+% Adjust margins for a more professional look
+\geometry{top=1in, bottom=1in, left=1.2in, right=1in}
+
+% Line spacing
+\renewcommand{\baselinestretch}{1.15}
+
+% Customize section headings for a thesis-like look
+\titleformat{\section}{\Large\bfseries\scshape}{\thesection.}{1em}{}
+\titleformat{\subsection}{\large\bfseries}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}{\normalsize\bfseries}{\thesubsubsection}{1em}{}
+
+\begin{document}
+
+% --- TITLE PAGE ---
+\begin{titlepage}
+    \centering
+    \vspace*{0.2cm}
+    
+    {\Huge\bfseries University of Moratuwa\par}
+    \vspace{0.2cm}
+    {\Large\bfseries Faculty of Engineering\par}
+    
+    \vspace{1.0cm}
+    \includegraphics[width=0.3\textwidth]{logo.png}\par
+    \vspace{1.0cm}
+    
+    {\Large\bfseries EN3150 -- Pattern Recognition\par}
+    \vspace{0.4cm}
+    {\LARGE\bfseries Assignment 03\par}
+    
+    \vspace{1.0cm}
+    {\Large\bfseries Resource-Constrained CNN for Edge Image Classification\par}
+    
+    \vspace{1.5cm}
+    {\large\bfseries Group Members\par}
+    \vspace{0.3cm}
+    \begin{center}
+        \renewcommand{\arraystretch}{1.5}
+        \begin{tabular}{|l|l|}
+            \hline
+            \textbf{Name} & \textbf{Index Number} \\
+            \hline
+            CHINTHAKA M.K.M.G. & 230105H \\
+            \hline
+            DILMITH G.S. & 230149U \\
+            \hline
+            KAUSHAL S.V. & 230326K \\
+            \hline
+            RAJAPAKSHA J.S.W. & 230511A \\
+            \hline
+        \end{tabular}
+    \end{center}
+    
+    \vfill
+    {\large \par}
+\end{titlepage}
+
+% --- PAGE 2: ABSTRACT ---
+\newpage
+\begin{center}
+    {\Large\textbf{Abstract}\par}
+\end{center}
+\vspace{1.0em}
+
+
+\addcontentsline{toc}{section}{Abstract}
+\noindent This report investigates the design and deployment of Convolutional Neural Networks (CNNs) for extreme edge devices, focusing on the automated classification of agricultural rice grains. We systematically develop a standard CNN baseline (Model A) and a highly optimized Depthwise-Separable CNN (Model B) strictly constrained to under 100,000 parameters. Through rigorous empirical evaluation, we demonstrate that Model B achieves a 94\% reduction in memory footprint ($\sim$0.99 MB) compared to State-of-the-Art architectures like EfficientNet-B0, whilst maintaining a highly competitive test accuracy of 96.73\%. This research validates the viability of deploying highly accurate, custom-built parameter-efficient networks on low-resource microcontrollers.
+
+% --- PAGE 3: TOC ---
+\newpage
+\tableofcontents
+
+% --- SECTION 1 ---
+\newpage
+\section{Dataset \& Pre-processing Pipeline}
+\vspace{1.5em}
+\subsection{Dataset Motivation \& Description}
+The dataset utilized is the Kaggle Rice Image Dataset. The objective is to classify five distinct macro geometric varieties of rice grains: \textbf{Arborio, Basmati, Ipsala, Jasmine, and Karacadag}. This simulates a real-world edge deployment scenario, such as an automated agricultural sorting machine operating on a resource-constrained microcontroller.
+
+The classification task is particularly suitable for evaluating lightweight convolutional neural networks because the rice varieties exhibit differences in their geometric and visual characteristics. Features such as grain shape, aspect ratio, size, texture, and surface appearance can provide useful spatial information for CNN-based feature extraction.
+
+Since the primary objective of this assignment is to investigate CNN architectures under strict computational and memory constraints, the dataset was intentionally processed using a fixed input resolution and a controlled number of samples per class. This allows the effect of architectural modifications on model size, computational complexity, and classification performance to be evaluated under consistent experimental conditions.
+
+
+\vspace{1.5em}
+\subsection{Data Pre-processing Pipeline \& Splitting}
+To ensure robust model training and emulate low-resource hardware constraints, the raw data underwent a strict pre-processing pipeline:
+\begin{enumerate}[label=\textbf{Step \arabic*:}, leftmargin=2.5cm, labelwidth=1.8cm, labelsep=0.5em]
+    \item \textbf{Image Acquisition:} The original dataset consists of RGB images containing individual rice grains. The raw images may have different spatial resolutions; therefore, a common input representation was required before they could be supplied to the CNN architectures.
+    \item \textbf{Resolution Downscaling:} Images strictly resized to $64 \times 64 \times 3$ tensors to minimize memory overhead. The first two dimensions represent the spatial resolution, while the third dimension represents the three RGB colour channels. Reducing the image resolution significantly decreases the amount of image data processed by each convolutional layer and therefore helps reduce the computational and memory requirements of the neural network.
+    \newpage
+    \item \textbf{Sub-sampling:} Exactly 2,000 images were selected from each rice variety, producing a total dataset of 10,000 images. Equal sampling was adopted to prevent the training process from being biased toward a particular rice variety due to unequal class representation.
+    \item \textbf{Pixel Normalization:} Rescaling pixel intensities from $[0, 255]$ to $[0, 1]$ or $[-1, 1]$ depending on the network architecture to ensure gradient stability.
+\end{enumerate}
+\vspace{1.5em}
+
+\noindent A rigid 70/15/15 stratified split was enforced to ensure equal class distributions across all sets:
+\begin{itemize}[leftmargin=4em]
+    \item \textbf{70\% Training data:} 7,000 images utilized for gradient descent.
+    \item \textbf{15\% Validation data:} 1,500 images utilized for hyperparameter tuning.
+    \item \textbf{15\% Test data:} 1,500 images utilized for unbiased final evaluation.
+\end{itemize}
+
+% FULL PAGE IMAGE FOR PRE-PROCESSING PIPELINE
+\newpage
+\vspace*{\fill}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth, height=0.85\textheight, keepaspectratio]{preprocessing_flow.png}
+    \caption{Dataset Pre-processing and Splitting Pipeline.}
+    \label{fig:preprocessing}
+\end{figure}
+\vspace*{\fill}
+
+\newpage
+\subsection{Sample Images \& Dataset Summary}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth, height=0.45\textheight, keepaspectratio]{sample_images.png}
+    \caption{Sample images from the Rice Image Dataset (Downscaled to 64x64).}
+    \label{fig:samples}
+\end{figure}
+
+\begin{table}[H]
+    \centering
+    \renewcommand{\arraystretch}{1.3}
+    \begin{tabular}{ll}
+        \toprule
+        \textbf{Property} & \textbf{Value} \\
+        \midrule
+        Dataset & Rice Image Dataset (Kaggle) \\
+        Task & Five-class rice variety classification \\
+        Maximum Image Resolution & $64 \times 64 \times 3$ (RGB) \\
+        Total Images & 10,000 (Sub-sampled) \\
+        Training / Validation / Testing & 70\% / 15\% / 15\% \\
+        \bottomrule
+    \end{tabular}
+    \caption{Summary of Dataset Properties.}
+\end{table}
+
+\clearpage
+% --- SECTION 2 ---
+\section{Theoretical Framework \& Optimizer Dynamics}
+\vspace{0.5cm}
+\subsection{Activation Functions: Overcoming the Vanishing Gradient}
+Standard non-linear activation functions such as Sigmoid $\sigma(x)$ or Hyperbolic Tangent $\tanh(x)$ frequently encounter the \textit{Vanishing Gradient} problem. During backpropagation, their derivatives approach zero at the tails, which prevents weights in earlier layers from updating effectively.
+
+\noindent To counteract this, we exclusively integrated the \textbf{Rectified Linear Unit (ReLU)}:
+\begin{equation}
+    f(x) = \max(0, x)
+\end{equation}
+ReLU provides a constant gradient of 1 for all positive inputs, allowing deep networks to converge rapidly. Furthermore, its simplistic threshold mechanism avoids computationally expensive exponential operations, which is crucial for edge microcontrollers.
+
+\subsection{Optimizer Dynamics: SGD vs. Momentum vs. Adam}
+Selecting the correct optimization algorithm dictates the trajectory of weight updates. We evaluated multiple algorithms:
+\begin{itemize}
+    \item \textbf{Standard SGD:} Updates weights based solely on the current batch's gradient. It frequently oscillates in ravines and gets trapped in saddle points.
+    \item \textbf{SGD with Momentum:} Introduces a velocity term ($\gamma$) that accumulates historical gradients:
+    \begin{equation}
+        v_t = \gamma v_{t-1} + \eta \nabla_\theta J(\theta)
+    \end{equation}
+    This damps vertical oscillations and accelerates horizontal convergence.
+    \item \textbf{Adam (Adaptive Moment Estimation):} The optimizer selected for our final training pipeline. Adam merges the velocity benefits of Momentum with the adaptive per-parameter learning rates of RMSprop. As visualized in Figure \ref{fig:optimizers}, Adam provided significantly faster and more stable initial reductions in validation loss compared to SGD.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{loss.png} \\
+    \vspace{0.4cm}
+    \includegraphics[width=0.85\textwidth]{accuracy.png}
+    \caption{Validation loss (Top) and accuracy (Bottom) comparison across 5 Optimizers.}
+    \label{fig:optimizers}
+\end{figure}
+
+\clearpage
+% --- SECTION 3 ---
+\section{Standard CNN Architecture (Model A)}
+\vspace{0.5cm}
+\subsection{Architectural Pipeline \& Design Philosophy}
+Model A acts as our high-capacity, standard CNN baseline. The architectural pipeline consists of two primary blocks:
+\begin{enumerate}
+    \item \textbf{Feature Extraction Block:} Interleaved 2D Convolutions and $2 \times 2$ Max Pooling layers designed to extract spatial hierarchies (edges, textures, shapes).
+    \item \textbf{Classification Head:} A flattened tensor fed into deeply connected Dense layers terminating in a 5-node Softmax probability output.
+\end{enumerate}
+
+\subsection{Layer-by-Layer Specifications}
+\begin{table}[H]
+    \centering
+    \renewcommand{\arraystretch}{1.3}
+    \begin{tabular}{lllc}
+        \toprule
+        \textbf{Layer (Type)} & \textbf{Output Shape} & \textbf{Operation} & \textbf{Activation} \\
+        \midrule
+        Input & (64, 64, 3) & RGB Image & - \\
+        Conv2D\_1 & (64, 64, 32) & $3 \times 3$ Standard Convolution & ReLU \\
+        MaxPooling2D\_1 & (32, 32, 32) & $2 \times 2$ Max Pooling & - \\
+        Conv2D\_2 & (32, 32, 64) & $3 \times 3$ Standard Convolution & ReLU \\
+        MaxPooling2D\_2 & (16, 16, 64) & $2 \times 2$ Max Pooling & - \\
+        Conv2D\_3 & (16, 16, 128) & $3 \times 3$ Standard Convolution & ReLU \\
+        MaxPooling2D\_3 & (8, 8, 128) & $2 \times 2$ Max Pooling & - \\
+        Flatten & (8192) & Flatten multidimensional tensor & - \\
+        Dense\_1 & (128) & Fully Connected Layer & ReLU \\
+        Dense\_2 (Output) & (5) & Classification Layer & Softmax \\
+        \bottomrule
+    \end{tabular}
+    \caption{Model A Layer-by-Layer Architecture Summary.}
+\end{table}
+
+\newpage
+\subsection{Mathematical Parameter Formulation}
+The trainable parameters for a standard Conv2D layer are calculated as:
+\begin{equation}
+    Parameters = (K_h \times K_w \times C_{in} + 1) \times C_{out}
+\end{equation}
+
+\begin{align*}
+    \text{Conv2D\_1: } & (3 \times 3 \times 3 + 1) \times 32 &&= 896 \\
+    \text{Conv2D\_2: } & (3 \times 3 \times 32 + 1) \times 64 &&= 18,496 \\
+    \text{Conv2D\_3: } & (3 \times 3 \times 64 + 1) \times 128 &&= 73,856 \\
+    \text{Dense\_1: } & (8192 + 1) \times 128 &&= 1,048,704 \\
+    \text{Dense\_2: } & (128 + 1) \times 5 &&= 645
+\end{align*}
+\textbf{Total Trainable Parameters:} $\mathbf{1,142,597}$. (Estimated Disk Size: 13.44 MB).
+
+\clearpage
+% --- SECTION 4 ---
+\section{Resource-Constrained Edge CNN (Model B)}
+\vspace{0.5cm}
+\subsection{The Edge Computing Paradigm}
+Edge devices possess highly restrictive memory budgets. The assignment enforces a strict limit of $<100,000$ parameters. To achieve this without losing spatial resolution, Model B replaces standard convolutions with \textbf{Depthwise-Separable Convolutions}.
+
+\subsection{Depthwise Separable Mechanics}
+This technique factorizes a standard convolution into two distinct mathematical phases:
+\begin{enumerate}
+    \item \textbf{Depthwise Phase:} Applies a single spatial filter ($3 \times 3$) independently to each input channel.
+    \item \textbf{Pointwise Phase:} Applies a $1 \times 1$ convolution across all channels to linearly combine the depthwise outputs.
+\end{enumerate}
+This factorization drastically reduces computational Multiply-Accumulate (MAC) operations. The new parameter formula becomes:
+\begin{equation}
+    Parameters = (K_h \times K_w \times C_{in}) + (1 \times 1 \times C_{in} \times C_{out} + C_{out})
+\end{equation}
+\newpage
+\subsection{Optimized Architectural Pipeline}
+Model B further reduces parameters by replacing the massive Flatten layer with Global Average Pooling (GAP), which averages the spatial dimensions into a single vector.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth, height=0.65\textheight, keepaspectratio]{model_b_arch.png}
+    \caption{Model B Depthwise-Separable Architecture Flow.}
+    \label{fig:model_b_arch}
+\end{figure}
+
+\newpage
+\begin{table}[H]
+    \centering
+    \renewcommand{\arraystretch}{1.2}
+    \begin{tabular}{lllc}
+        \toprule
+        \textbf{Layer (Type)} & \textbf{Output Shape} & \textbf{Operation} & \textbf{Activation} \\
+        \midrule
+        Input & (64, 64, 3) & RGB Image & - \\
+        SeparableConv\_1 & (64, 64, 32) & Depthwise + Pointwise & ReLU \\
+        MaxPooling\_1 & (32, 32, 32) & $2 \times 2$ Max Pooling & - \\
+        SeparableConv\_2 & (32, 32, 64) & Depthwise + Pointwise & ReLU \\
+        MaxPooling\_2 & (16, 16, 64) & $2 \times 2$ Max Pooling & - \\
+        SeparableConv\_3 & (16, 16, 128) & Depthwise + Pointwise & ReLU \\
+        MaxPooling\_3 & (8, 8, 128) & $2 \times 2$ Max Pooling & - \\
+        SeparableConv\_4 & (8, 8, 256) & Depthwise + Pointwise & ReLU \\
+        GlobalAvgPool & (256) & Spatial Dimensionality Reduction & - \\
+        Dense\_1 & (128) & Fully Connected Layer & ReLU \\
+        Dense\_2 & (5) & Classification Softmax & Softmax \\
+        \bottomrule
+    \end{tabular}
+    \caption{Model B (Lightweight) Layer-by-Layer Architecture Summary.}
+\end{table}
+
+\subsection{Rigorous Parameter Verification}
+\begin{align*}
+    \text{SepConv\_1: } & (3 \times 3 \times 3) + (1 \times 1 \times 3 \times 32 + 32) &&= 155 \\
+    \text{SepConv\_2: } & (3 \times 3 \times 32) + (1 \times 1 \times 32 \times 64 + 64) &&= 2,400 \\
+    \text{SepConv\_3: } & (3 \times 3 \times 64) + (1 \times 1 \times 64 \times 128 + 128) &&= 8,896 \\
+    \text{SepConv\_4: } & (3 \times 3 \times 128) + (1 \times 1 \times 128 \times 256 + 256) &&= 34,176 \\
+    \text{Dense\_1: } & (256 + 1) \times 128 &&= 32,896 \\
+    \text{Dense\_2: } & (128 + 1) \times 5 &&= 645
+\end{align*}
+\textbf{Total Parameters: $\mathbf{79,168}$.} Model B satisfies the strict $< 100,000$ limit. Disk Size: \textbf{0.99 MB}.
+
+% --- SECTION 5 ---
+% NO \clearpage HERE so Section 5 text flows into Page 14
+\vspace{1.5cm}
+
+\newpage
+\section{Model Training \& Validation Analysis}
+
+\subsection{Hardware \& Environment Setup}
+All models were trained utilizing a cloud-based GPU accelerator (Google Colab NVIDIA T4). This ensured a standardized baseline for precisely measuring the average training time per epoch.
+
+\subsection{Overfitting vs. Regularization Dynamics}
+Both custom models were trained for 20 epochs. A critical architectural phenomenon regarding model capacity was observed during this process.
+
+
+\subsubsection{Training Loss Convergence}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.70\textwidth]{loss_curves_A.png} \\
+    \vspace{0.1cm}
+    \includegraphics[width=0.70\textwidth]{loss_curves_B.png}
+    \caption{Loss curves for Model A (Top) and Model B (Bottom).}
+    \label{fig:loss_curves}
+\end{figure}
+
+\begin{itemize}
+    \item \textbf{Model A (Overfitting):} Validation loss diverges and increases after epoch 5. Its excessive capacity ($\sim 1.14 \text{M}$ parameters) memorizes the training subset rather than learning generalized features.
+    \item \textbf{Model B (Natural Regularization):} Due to its constrained parameter space ($\sim 79\text{k}$), Model B is forced to learn fundamental patterns. Its validation loss smoothly tracks the training loss without divergence, inherently resisting overfitting.
+\end{itemize}
+
+\subsection{Test Set Classification Metrics}
+\begin{table}[H]
+    \centering
+    \renewcommand{\arraystretch}{1.3}
+    \begin{tabular}{lcccccc}
+        \toprule
+        & \multicolumn{3}{c}{\textbf{Model A (Standard CNN)}} & \multicolumn{3}{c}{\textbf{Model B (Lightweight CNN)}} \\
+        \cmidrule(lr){2-4} \cmidrule(lr){5-7}
+        \textbf{Class} & \textbf{Precision} & \textbf{Recall} & \textbf{F1} & \textbf{Precision} & \textbf{Recall} & \textbf{F1} \\
+        \midrule
+        Arborio & 0.97 & 0.93 & 0.95 & 0.98 & 0.94 & 0.96 \\
+        Basmati & 0.98 & 0.98 & 0.98 & 0.99 & 0.96 & 0.98 \\
+        Ipsala & 0.99 & 1.00 & 0.99 & 1.00 & 0.98 & 0.99 \\
+        Jasmine & 0.97 & 0.96 & 0.96 & 0.98 & 0.99 & 0.99 \\
+        Karacadag & 0.94 & 0.98 & 0.96 & 0.95 & 0.98 & 0.96 \\
+        \midrule
+        \textbf{Macro Avg} & \textbf{0.97} & \textbf{0.97} & \textbf{0.97} & \textbf{0.98} & \textbf{0.97} & \textbf{0.98} \\
+        \textbf{Accuracy} & \multicolumn{3}{c}{\textbf{96.73\%}} & \multicolumn{3}{c}{\textbf{96.73\%}} \\
+        \bottomrule
+    \end{tabular}
+    \caption{Detailed Classification Metrics on Test Set.}
+\end{table}
+
+\clearpage
+\subsubsection{Confusion Matrix Analysis}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\textwidth, height=0.45\textheight, keepaspectratio]{confusion_matrices_A.png} \\
+    \vspace{0.4cm}
+    \includegraphics[width=0.75\textwidth, height=0.45\textheight, keepaspectratio]{confusion_matrices_B.png}
+    \caption{Confusion Matrices for Model A (Top) and Model B (Bottom).}
+\end{figure}
+
+\clearpage
+% --- SECTION 6 ---
+\section{State-of-the-Art (SOTA) Transfer Learning}
+
+\subsection{Transfer Learning Pipeline}
+To contextualize the performance of our custom network, we utilized transfer learning on two pre-trained architectures designed for mobile computing. The pipeline involved:
+\begin{enumerate}
+    \item \textbf{Base Layer Freezing:} Freezing the ImageNet-trained convolutional base to preserve generalized feature extraction and prevent catastrophic forgetting.
+    \item \textbf{Input Scaling:} Adapting raw $[0, 255]$ pixels to $[-1, 1]$ (for MobileNetV2) using dedicated Rescaling layers.
+    \item \textbf{Custom Head Attachment:} Attaching a Global Average Pooling layer followed by custom Dense layers for 5-class identification.
+\end{enumerate}
+
+\subsection{SOTA Architectures Selected}
+\begin{itemize}
+    \item \textbf{MobileNetV2:} Utilizes Inverted Residuals and Linear Bottlenecks to drastically reduce the dimensionality of layers, optimizing it for mobile GPUs.
+    \item \textbf{EfficientNetB0:} Utilizes Compound Scaling, which balances network depth, width, and resolution using a mathematically optimized scalar coefficient.
+\end{itemize}
+
+\subsection{SOTA Training Dynamics}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth, height=0.45\textheight, keepaspectratio]{sota_loss.png} \\
+    \caption{Training Loss Curve for SOTA Models.}
+    \label{fig:sota_curves}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth, height=0.45\textheight, keepaspectratio]{sota_accuracy.png}
+    \caption{Accuracy Curve for SOTA Models.}
+    \label{fig:sota_curves}
+\end{figure}
+
+\clearpage
+% --- SECTION 7 ---
+\section{Comprehensive Trade-off Analysis}
+
+\subsection{Accuracy vs. Memory Footprint}
+The core challenge in edge AI deployment is balancing classification power against strict hardware memory limits. Figure \ref{fig:acc_vs_size} visually maps this trade-off.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth, height=0.6\textheight, keepaspectratio]{accuracy_vs_size.png}
+    \caption{Accuracy vs. Model Size. Model B falls into the optimal extreme-edge region.}
+    \label{fig:acc_vs_size}
+\end{figure}
+
+\noindent While EfficientNet-B0 offers peak accuracy (99.20\%), its massive 17.79 MB footprint severely restricts deployment on microcontrollers (e.g., standard Arduino boards possess $<1\text{MB}$ of SRAM). Model B sacrifices merely $\sim 2.5\%$ in absolute accuracy, but achieves a staggering \textbf{94\% reduction in memory} compared to EfficientNet-B0.
+
+\newpage
+\subsection{Computational Latency \& Inference Efficiency}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth, height=0.6\textheight, keepaspectratio]{time_per_epoch.png}
+    \caption{Average Training Time per Epoch across evaluated models.}
+    \label{fig:time}
+\end{figure}
+
+While MobileNetV2 exhibited faster training times (due to its frozen base layers), Model B remains the superior choice for \textit{inference} (actual real-time deployment). With 30x fewer parameters than MobileNetV2, Model B executes exponentially fewer MAC operations per image frame, drastically reducing latency and battery consumption on the sorting machine.
+
+\clearpage
+% --- SECTION 8 ---
+\section{Advantages \& Limitations in Edge Deployment}
+
+Building a custom sub-100k parameter model from scratch (Model B) presents a unique set of strategic trade-offs when compared against fine-tuning industry-standard SOTA models.
+
+\subsection{Advantages of Custom Lightweight Models (Model B)}
+\begin{itemize}
+    \item \textbf{Extreme Memory Efficiency:} Occupying less than 1 MB, Model B can be easily flashed onto basic Edge IoT devices (e.g., ESP32, STM32) which lack the storage to hold an 18 MB EfficientNet model.
+    \item \textbf{Lower Inference Latency:} The massive reduction in total parameters directly correlates to fewer floating-point operations per second (FLOPS) required during forward propagation, resulting in faster real-time sorting.
+    \item \textbf{Inherent Regularization:} Due to its heavily constrained capacity, Model B inherently resists overfitting without requiring complex Dropout layers or L1/L2 regularization tuning.
+\end{itemize}
+
+\subsection{Limitations of Custom Lightweight Models}
+\begin{itemize}
+    \item \textbf{Longer Training Convergence:} Pre-trained SOTA models already possess highly optimized feature-extracting kernels from ImageNet. Training Model B from scratch requires the optimizer to learn fundamental geometrical kernels from zero, increasing the required epochs for convergence.
+    \item \textbf{Sub-optimal Maximum Accuracy:} SOTA architectures leverage complex innovations (Inverted Residuals) to extract deeply nuanced features. For highly complex datasets, a simple custom Depthwise CNN will inevitably hit an accuracy ceiling lower than an EfficientNet architecture.
+\end{itemize}
+
+\clearpage
+% --- SECTION 9 and 10 ---
+\section{Conclusion \& Future Work}
+This project rigorously investigated Convolutional Neural Networks for resource-constrained edge classification. Model A provided strong accuracy but overfit the training data and consumed excessive memory (13.44 MB). SOTA models achieved the absolute highest accuracies ($\sim 99\%$) but remain unsuitable for ultra-low-resource hardware due to their massive parameter counts ($\sim 4.1\text{M}$). 
+
+Our custom \textbf{Model B (Lightweight CNN)} successfully satisfied the strict requirement of $< 100,000$ parameters, achieving an astonishingly small memory footprint of just \textbf{0.99 MB} while maintaining a highly competitive \textbf{96.73\%} test accuracy. For environments with rigorous physical hardware constraints, Model B demonstrates the optimal strategic trade-off. Future work could involve applying Post-Training Quantization (INT8) to further reduce Model B's size to under 250 KB for extreme micro-edge deployment.
+
+\vspace{1.5cm}
+
+\section{Source Code \& Reproducibility}
+The complete source code for this project, including the Jupyter Notebook, dataset pre-processing scripts, and the LaTeX source utilized to compile this report, is publicly available on GitHub. 
+
+\textbf{Repository Link:} \url{https://github.com/senuja-dilmith/EN3150_A03_GalTricals.git}
+
+To ensure 100\% mathematical reproducibility of the model parameters and accuracy scores presented in this paper, all Python, NumPy, and TensorFlow random state initializers were deterministically locked globally prior to dataset generation via a custom \texttt{set\_global\_deterministic\_seeds(42)} function. 
+
+% --- REFERENCES ---
+\clearpage
+\begin{thebibliography}{9}
+
+\bibitem{lec}
+Sampath K. Perera, \textit{EN3150 Pattern Recognition - Lecture 06: Deep Neural Networks}. University of Moratuwa, 2026.
+
+\bibitem{lec}
+Sampath K. Perera, \textit{EN3150 Pattern Recognition - Lecture 07: Convolutional neural networks (CNNs)}. University of Moratuwa, 2026.
+
+\bibitem{kaggle}
+Murat Koklu, \textit{Rice Image Dataset}. Kaggle Machine Learning Repository. Available: \url{https://www.kaggle.com/datasets/muratkokludataset/rice-image-dataset}
+
+\bibitem{keras_docs}
+Chollet, F. et al., \textit{Keras API Reference: DepthwiseSeparableConv2D}. Keras Documentation. Available: \url{https://keras.io/api/layers/convolution_layers/separable_conv2d/}
+
+\bibitem{mobilenet}
+M. Sandler, A. Howard, M. Zhu, A. Zhmoginov, and L.-C. Chen, ``MobileNetV2: Inverted Residuals and Linear Bottlenecks,'' \textit{Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR)}, 2018, pp. 4510-4520.
+
+\bibitem{efficientnet}
+M. Tan and Q. Le, ``EfficientNet: Rethinking Model Scaling for Convolutional Neural Networks,'' \textit{International Conference on Machine Learning (ICML)}, 2019, pp. 6105-6114.
+
+\bibitem{chollet_xception}
+F. Chollet, ``Xception: Deep Learning with Depthwise Separable Convolutions,'' \textit{Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR)}, 2017, pp. 1251-1258.
+
+\end{thebibliography}
+
+\end{document}
