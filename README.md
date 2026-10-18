@@ -46,3 +46,23 @@ All models were evaluated on a held-out test set of **11,250 images** (downscale
 ├── EN3150_Assignment_03_In23.pdf              # Assignment Rubric and Guidelines
 ├── requirements.txt                           # Python environment dependencies
 └── README.md                                  # Project documentation
+```
+
+---
+
+## 📊 View Notebook Online
+Click the badge below to inspect the fully executed notebook including all interactive plots and training logs:
+
+[![View Jupyter Notebook](https://img.shields.io/badge/View%20Notebook-nbviewer-orange?logo=jupyter&style=for-the-badge)](https://nbviewer.jupyter.org/github/senuja-dilmith/EN3150_A03_GalTricals/blob/main/notebook/EN3150_Assignment_03_GalTricals.ipynb)
+
+---
+
+## 👥 Team GalTricals (University of Moratuwa)
+This project was carried out for the module **EN3150 – Pattern Recognition**, Department of Electronic and Telecommunication Engineering.
+
+| Name | Index Number |
+| :--- | :---: |
+| **CHINTHAKA M.K.M.G.** | 230105H |
+| **DILMITH G.S.** | 230149U |
+| **KAUSHAL S.V.** | 230326K |
+| **RAJAPAKSHA J.S.W.** | 230511A |
